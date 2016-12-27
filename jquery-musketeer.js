@@ -10,25 +10,34 @@
 }( this, function( $  ) {
 
 	function Musketeer( options ) {
-		this.options = $.extend( {}, this.constructor.defaults );
 		this.init();
 	}
 
+	// Parse borrowed from jquery pjax
+	function parseHTMLHead( data ) {
+		var htmlHead = data.match( /<head[^>]*>([\s\S.]*)<\/head>/i )[ 0 ];
+		return $( '<head />' ).html( $.parseHTML( htmlHead, document, true ) );
+	}
+
+	function parseHTMLBody( data ) {
+		var htmlBody = data.replace( /(\r\n|\n|\r)/gm, '').replace( /([^]+<body[^>]*>|<\/body>[^]+)/g );
+		return $( '<div />' ).html( $.parseHTML( htmlBody, document, true ) );
+	}
 
 	Musketeer.defaults = {
 		debug: "0",
 		i18n: {},
 		barbajs: {
 			head: [ 
-				"meta[ name='keywords' ]",
-				"meta[ name='description' ]",
-				"meta[ property^='og' ]",
-				"meta[ name^='twitter' ]",
-				"meta[ itemprop ]",
-				"link[ itemprop ]",
-				"link[ rel='prev' ]",
-				"link[ rel='next' ]",
-				"link[ rel='canonical' ]",
+				"meta[name='keywords']",
+				"meta[name='description']",
+				"meta[property^='og']",
+				"meta[name^='twitter']",
+				"meta[itemprop]",
+				"link[itemprop]",
+				"link[rel='prev']",
+				"link[rel='next']",
+				"link[rel='canonical']",
 				"script[ lang ]"
 			 ].join( ','  )
 		}
@@ -41,7 +50,10 @@
 		$( document ).ready( function() {
 			var $setting = $( '#musketeer-setting' );
 			if ( $setting.length ) {
-				self.options = $.extend( self.options, JSON.parse( $setting.html() ) );
+				self.options = $.extend( true, self.constructor.defaults, JSON.parse( $setting.html() ) );
+			}
+			else if ( self.options ) {
+				self.options = $.extend( true, self.constructor.defaults, self.options );
 			}
 			parseInt( self.debug || '', 10 );
 			if ( ! isNaN( self.options.debug ) && self.options.debug > 0 ) {
@@ -190,14 +202,7 @@
 		Barba.Pjax.start();
 		linkClicked = false;
 		Barba.Dispatcher.on( 'newPageReady', function( currentStatus, oldStatus, container, newPageRawHTML ) {
-			// html head parser borrowed from jquery pjax
-			var $newPageHead = $( '<head />' ).html( 
-					$.parseHTML( 
-						newPageRawHTML.match( /<head[ ^> ]*>( [ \s\S. ]* )<\/head>/i )[ 0 ],
-						document,
-						true
-					 )
-	  			 );
+			var $newPageHead = parseHTMLHead( newPageRawHTML );
 			var headConfig = self.options.barbajs.head;
 			$( 'head' ).find( headConfig ).remove(); // Remove current head tags
 			$newPageHead.find( headConfig ).appendTo( 'head' ); // Append new tags to the head
@@ -301,6 +306,7 @@
 			});
 			// Refresh
 		   	refreshSocialButtons();
+        	$( document ).trigger( 'musketeer:ready' );
 		};
 		if ( this.options.i18n.menu ) {
 			var $menu = $( this.options.i18n.menu );
@@ -336,10 +342,11 @@
 
 	Musketeer.prototype.getRemoteData = function() {
 		var self	 = this,
-			$remotes = $( 'div[data-remote]' ),
+			$remotes = $( '[data-remote]' ),
 			async	 = $remotes.length;
 		if ( async < 1 ) {
 			self.i18n();
+			return 1;
 		}
 		$remotes.each(function() {
 			var $el = $( this ), 
@@ -347,8 +354,12 @@
 			if ( id ) {
 				Barba.Utils.xhr( $el.attr( 'data-remote' ) ).then(function( data ) {
 					async--;
-					var body = data.replace( /(\r\n|\n|\r)/gm, '').replace( /([^]+<body[^>]*>|<\/body>[^]+)/g );
-					$el.html( $( '<div />' ).html( body ).find( '#' + id ).html() );
+					$( this ).html( $( parseHTMLBody( data  ) ).find( '#' + id ).html() );
+					var $jsonHead = $( parseHTMLHead( data ) ).find( 'script[lang]' );
+					if ( $jsonHead.length ) {
+						$( '#' + $jsonHead.attr( 'id' ) ).remove();
+						$( 'head' ).append( $jsonHead );
+					}
 					if ( async < 1 ) {
 						self.i18n();
 					}
