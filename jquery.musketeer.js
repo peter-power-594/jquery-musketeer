@@ -223,9 +223,17 @@
 		}
 		var refreshSocialButtons = function() {
 			var $sel = $( '.' + Barba.Pjax.Dom.containerClass ),
-				_selfTwttr = window.twttr || false;
-			if ( _selfTwttr ) {
+				_selfTwttr = window.twttr || false,
+				_selfFbSdk = window.FB || false,
+				_selfGpApi = window.gapi || false;
+			if ( _selfTwttr && _selfTwttr.widgets ) {
 				_selfTwttr.widgets.load( $sel[ $sel.length-1 ] );
+			}
+			if ( _selfFbSdk && _selfTwttr.XFBML ) {
+				_selfFbSdk.XFBML.parse( $sel[ $sel.length-1 ] );
+			}
+			if ( _selfGpApi && _selfGpApi.plusone ) {
+				_selfGpApi.plusone.go();
 			}
 		};
 		var self = this,
@@ -233,6 +241,7 @@
 		docEl.lang = docEl.lang || "en";
 		var switchLanguage = function( lang ) {
 			self.log( 'info', 'Switching Language to ' + lang );
+        	$( document ).trigger( 'musketeer:ready' );
 	   		self.lang = lang; // Current lang
 	   		$.jStorage.set( 'lang', lang );
 			// Switch global document language and update body classnames
@@ -306,7 +315,7 @@
 			});
 			// Refresh
 		   	refreshSocialButtons();
-        	$( document ).trigger( 'musketeer:ready' );
+        	$( document ).trigger( 'musketeer:complete' );
 		};
 		if ( this.options.i18n.menu ) {
 			var $menu = $( this.options.i18n.menu );
@@ -354,7 +363,7 @@
 			if ( id ) {
 				Barba.Utils.xhr( $el.attr( 'data-remote' ) ).then(function( data ) {
 					async--;
-					$( this ).html( $( parseHTMLBody( data  ) ).find( '#' + id ).html() );
+					$el.html( $( parseHTMLBody( data  ) ).find( '#' + id ).html() );
 					var $jsonHead = $( parseHTMLHead( data ) ).find( 'script[lang]' );
 					if ( $jsonHead.length ) {
 						$( '#' + $jsonHead.attr( 'id' ) ).remove();
