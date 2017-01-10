@@ -16,7 +16,7 @@ This plugin is an attempt to solve in an affordable way the following issue:
 
 No magic at all
 
-1. Include all the contents inside the page
+1) Include all the contents inside the page
 
 Split the same content by language, included in the same html page
 
@@ -31,7 +31,7 @@ itself or if possible a little bit more elegant via a custom field based solutio
 Using progressive enhancement the Musketeer will handle for you the display 
 of the required / unecessary contents.
 
-2. Manage other languages in based folders
+2) Manage other languages in based folders
 
 The easiest way is to use virtual folders labelled with the ISO 639-1 language 
 codes (same one used for the html document's attribute lang)

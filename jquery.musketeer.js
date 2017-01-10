@@ -69,7 +69,9 @@
 				}
 			}
 			self.lang = $.jStorage.get( 'lang', self.options.i18n.base );
-			self.getRemoteData();
+			self.getRemoteData(function() {
+				self.i18n();
+			});
 			self.pjaxify();
 		});
 	};
@@ -207,7 +209,9 @@
 			$( 'head' ).find( headConfig ).remove(); // Remove current head tags
 			$newPageHead.find( headConfig ).appendTo( 'head' ); // Append new tags to the head
 			var currLang = docEl.lang || "en"; // Trigger new lang
-			self.triggerLang( currLang );
+			self.getRemoteData(function() {
+				self.triggerLang( currLang );
+			});
 			if ( window.ga ) {
 				window.ga( 'send', 'pageview', window.location.pathname + window.location.search );
 			}
@@ -349,12 +353,14 @@
 		}
 	};
 
-	Musketeer.prototype.getRemoteData = function() {
+	Musketeer.prototype.getRemoteData = function( callback ) {
 		var self	 = this,
 			$remotes = $( '[data-remote]' ),
 			async	 = $remotes.length;
 		if ( async < 1 ) {
-			self.i18n();
+			if ( callback && typeof callback === 'function' ) {
+				callback();
+			}
 			return 1;
 		}
 		$remotes.each(function() {
@@ -370,7 +376,9 @@
 						$( 'head' ).append( $jsonHead );
 					}
 					if ( async < 1 ) {
-						self.i18n();
+						if ( callback && typeof callback === 'function' ) {
+							callback();
+						}
 					}
 				}, function ( error ) {
 					self.log( error.message );
