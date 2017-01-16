@@ -60,7 +60,7 @@
 				self.log = function( mtd, msg ) {
 					if ( arguments.length === 1 ) {
 						if ( window.console && window.console.log ) {
-							window.console.log( arguments[ 0 ] );
+							window.console.log( 'jQuery Musketeer: ' + arguments[ 0 ] );
 						}
 					}
 					else if ( window.console && window.console[ mtd ] ) {
