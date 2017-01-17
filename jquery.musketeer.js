@@ -13,7 +13,7 @@
 		this.init();
 	}
 
-	// Parse borrowed from jquery pjax
+	// Parsers borrowed from jquery pjax
 	function parseHTMLHead( data ) {
 		var htmlHead = data.match( /<head[^>]*>([\s\S.]*)<\/head>/i )[ 0 ];
 		return $( '<head />' ).html( $.parseHTML( htmlHead, document, true ) );
@@ -48,14 +48,14 @@
 	Musketeer.prototype.init = function() {
 		var self = this;
 		$( document ).ready( function() {
-			var $setting = $( '#musketeer-setting' );
+			var $setting = $( '#musketeer-options' );
 			if ( $setting.length ) {
 				self.options = $.extend( true, self.constructor.defaults, JSON.parse( $setting.html() ) );
 			}
 			else if ( self.options ) {
 				self.options = $.extend( true, self.constructor.defaults, self.options );
 			}
-			parseInt( self.debug || '', 10 );
+			self.options.debug = parseInt( self.options.debug || 0, 10 );
 			if ( ! isNaN( self.options.debug ) && self.options.debug > 0 ) {
 				self.log = function( mtd, msg ) {
 					if ( arguments.length === 1 ) {
@@ -66,7 +66,7 @@
 					else if ( window.console && window.console[ mtd ] ) {
 						window.console[ mtd ]( 'jQuery Musketeer: ' + msg );
 					}
-				}
+				};
 			}
 			self.lang = $.jStorage.get( 'lang', self.options.i18n.base );
 			self.getRemoteData(function() {
@@ -76,33 +76,37 @@
 		});
 	};
 
+
+	Musketeer.prototype.url2path = function( url ) {
+		var pme = ( url || '' ).replace([
+			window.location.protocol,
+			'//',
+			window.location.host
+		].join( '' ), '' ); // Remove domain like http(s)://www.foo.com
+		pme = pme.replace( /\?.*/, '' ); // Remove extra parameters like ?foo=bar
+		pme = pme.replace( /#.*/, '' ); // Remove anchor
+		return pme;
+	};
+
+
 	Musketeer.prototype.urlfaker = function( url ) {
 		var self = this;
 		self.log( 'info', 'urlfaker(' + ( url || '' ) + ')' );
 		var ptc = window.location.protocol,
 			hst = window.location.host,
-			pme = '',
-			sch = '',
-			hsh = '';
+			pme = window.location.pathname,
+			sch = window.location.search,
+			hsh = window.location.hash;
 		if ( ! url ) { // No url provided. Using current location
 			url = document.location.href;
-			pme = window.location.pathname;
-			sch = window.location.search;
-			hsh = window.location.hash;
 		}
 		else { // Specific url
 			// Getting a pathname from url
-			pme = url.replace( ptc + '//' + hst, '' ); // Remove domain like http(s)://www.foo.com
-			pme = pme.replace( /\?.*/, '' ); // Remove extra parameters like ?foo=bar
-			pme = pme.replace( /#.*/, '' ); // Remove anchor
+			pme = self.url2path( url );
 			// Getting parameters from url
-			if ( /\?/.test( url ) ) {
-				sch = '?' + url.split( '?' )[ 1 ].split( '#' )[ 0 ];
-			}
+			sch = /\?/.test( url ) ? '?' + url.split( '?' )[ 1 ].split( '#' )[ 0 ] : '';
 			// Getting hash from url
-			if ( /#/.test( url ) ) {
-				hsh = '#' + url.split( '#' )[ 1 ];
-			}
+			hsh = /#/.test( url ) ? '#' + url.split( '#' )[ 1 ] : '';
 		}
 		// Remove language dependencies from pathname
 		$.each( self.options.i18n.langs, function() {
@@ -136,6 +140,41 @@
 	};
 
 
+	Musketeer.prototype.urlunfaker = function() {
+		var self = this;
+		self.log( 'info', 'urlunfaker()' );
+		var ptc = window.location.protocol,
+			hst = window.location.host,
+			pme = window.location.pathname,
+			sch = window.location.search,
+			hsh = window.location.hash,
+			url = '';
+		$.each( self.options.i18n.langs, function() {
+			var lng = this.toString(),
+				reg = new RegExp( '^/' + lng + '/' );
+			if ( reg.test( pme ) ) {
+				pme = pme.replace( reg, '/' );
+				if ( sch.length ) {
+					sch += '&lang=' + lng;
+				}
+				else {
+					sch = '?lang=' + lng;
+				}
+				return true;
+			}
+		});
+		url = [
+			ptc,
+			'//',
+			hst,
+			pme,
+			sch,
+			hsh
+		].join( '' );
+		self.log( 'The following url was generated:' + url );
+		return url;
+	};
+
 	Musketeer.prototype.triggerLang = function( lang ) {
 		$( this.options.i18n.menu ).find( "a[ lang='" + lang + "' ],a[ hreflang='" + lang + "' ]" ).trigger( 'click' );
 	};
@@ -147,62 +186,68 @@
 			return false;
 		}
 		// Prevent Barba from caching contents
+		// This only disables the 'dom' content
+		// Ajax requests are handled with default settings
 		Barba.Pjax.cacheEnabled = false;
-		// Disable Barba library native pushstate
-		// By using the linkCliked dispatcher
-		// And overriding Barba.Utils.getCurrentUrl && Barba.Pjax.goTo
-		var linkClicked  = true,
-			requestedURL = document.location.href; // First use in Barba's "history"
-		$.each( self.options.i18n.langs, function() {
-			requestedURL = requestedURL.replace( new RegExp( '/' + this.toString() + '/' ), '/' );
-		});
-		Barba.Dispatcher.on( 'linkClicked', function( HTMLElement, MouseEvent ) {
-			// Barbajs only dispatch the event if the link is valid
-			linkClicked = true;
-		});
+		// Override Barba library native pushstate
+		// The pushState is initially called in Barba.Pjax.goTo
+		// So overriding Barba.Pjax.goTo first
+		var requestedURL = '';
 		Barba.Pjax.getCurrentUrl = function() {
-			self.log( 'info', 'Barba.Pjax.getCurrentUrl()' );
-			if ( ! linkClicked ) {
-				// Prev / Next Button
-				self.log( 'warn', 'URL requested from browser back / next buttons' );
-				var pme = window.location.pathname,
-					fnd = 0,
-					reg;
-				$.each( self.options.i18n.langs, function() {
-					reg = new RegExp( '^/' + this.toString() + '/' );
-					if ( ! fnd && reg.test( pme ) && new RegExp( pme.replace( reg, '/' ) ).test( requestedURL ) ) {
-						fnd = 1;
-						self.triggerLang( this.toString() );
-					}
-				});
-				if ( ! fnd && new RegExp( window.location.pathname ).test( requestedURL ) ) {
-					fnd = 1;
-					self.triggerLang( self.options.i18n.base );
-				}
-				if ( ! fnd ) {
-					fnd = 1;
-					requestedURL = [
-						window.location.protocol,
-						'//',
-						window.location.host,
-						pme,
-						window.location.search,
-						window.hash
-					].join( '' );
-				}
-			}
-			return requestedURL;
+			return requestedURL; // Return as it is
 		};
 		Barba.Pjax.goTo = function( url ) {
 			self.log( 'info', 'Barbar.Pjax.goTo(' + url + ')' );
-			requestedURL = url;
-			Barba.Pjax.onStateChange(); // Triggers Barba.Pjax.getCurrentURL
+			// Keep the real one to fetch the real page via xhr
+			requestedURL = url; 
+			// Pjax.onStateChange triggers Pjax.getCurrentURL
+			Barba.Pjax.onStateChange();
+			// Own custom pushState, display cleaned faked url if need be
 			window.history.pushState( null, null, self.urlfaker( url ) );
-			linkClicked = false;
+		};
+		// And overriding Barbar.Pjax.onStateChange
+		// We differenciate normal click and back button thanks to linkClicked
+		// Barba only dispatchs this event if the link is valid :-)
+		var linkClicked = false;
+		Barba.Dispatcher.on( 'linkClicked', function( HTMLElement, MouseEvent ) {
+			linkClicked = true;
+		});
+		// Standard js hack. Same way as explained here: http://barbajs.org/faq.html
+		Barba.Pjax.originalOnStateChange  = Barba.Pjax.onStateChange;
+		Barba.Pjax.onStateChange = function() {
+			if ( linkClicked ) {  // Normal Click
+		   		Barba.Pjax.originalOnStateChange.call( this );
+				linkClicked = false;
+				return;
+			}
+			// Prev / Next Button
+			self.log( 'warn', 'URL requested from browser back / next buttons' );
+			var wpme = window.location.pathname.replace( /index\.\w+$/, '' ),
+				upme = self.url2path( requestedURL ).replace( /index\.\w+$/, '' ),
+				fnd  = 0;
+			if ( wpme === upme ) {
+				// Same page, revert to the base language
+				return self.triggerLang( self.options.i18n.base );
+			}
+			$.each( self.options.i18n.langs, function() {
+				// Same page, revert to a different language
+				var reg = new RegExp( '^/' + this.toString() + '/' );
+				if ( reg.test( wpme ) && new RegExp( wpme.replace( reg, '/' ) ) === upme ) {
+					fnd = 1;
+					self.triggerLang( this.toString() );
+					return false; // Same as break; 
+				}
+			});
+			if ( fnd > 0 ) {
+				return;
+			}
+			// Other page
+			linkClicked = true;
+			requestedURL = self.urlunfaker();
+			Barba.Pjax.onStateChange();
 		};
 		// Go on
 		Barba.Pjax.start();
-		linkClicked = false;
 		Barba.Dispatcher.on( 'newPageReady', function( currentStatus, oldStatus, container, newPageRawHTML ) {
 			var $newPageHead = parseHTMLHead( newPageRawHTML );
 			var headConfig = self.options.barbajs.head;
@@ -245,7 +290,7 @@
 		docEl.lang = docEl.lang || "en";
 		var switchLanguage = function( lang ) {
 			self.log( 'info', 'Switching Language to ' + lang );
-        	$( document ).trigger( 'musketeer:ready' );
+			$( document ).trigger( 'musketeer:ready' );
 	   		self.lang = lang; // Current lang
 	   		$.jStorage.set( 'lang', lang );
 			// Switch global document language and update body classnames
@@ -319,11 +364,11 @@
 			});
 			// Refresh
 		   	refreshSocialButtons();
-        	$( document ).trigger( 'musketeer:complete' );
+			$( document ).trigger( 'musketeer:complete' );
 		};
 		if ( this.options.i18n.menu ) {
 			var $menu = $( this.options.i18n.menu );
-			$menu.find( 'a' ).bind( 'click', function( event ) {
+			$menu.on( 'click', 'a', function( event ) {
 				event.preventDefault();
 				switchLanguage( $( this ).attr( 'hreflang' ) || $( this ).attr( 'lang' ) );
 				$menu.find( '.ui-state-active' ).removeClass( 'ui-state-active' );
