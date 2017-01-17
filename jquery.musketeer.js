@@ -55,6 +55,9 @@
 			else if ( self.options ) {
 				self.options = $.extend( true, self.constructor.defaults, self.options );
 			}
+			else {
+				self.options = self.constructor.defaults;
+			}
 			self.options.debug = parseInt( self.options.debug || 0, 10 );
 			if ( ! isNaN( self.options.debug ) && self.options.debug > 0 ) {
 				self.log = function( mtd, msg ) {
