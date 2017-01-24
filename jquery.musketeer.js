@@ -245,7 +245,7 @@
 				return;
 			}
 			// Other page
-			linkClicked = true;
+    	    Barba.Dispatcher.trigger( 'linkClicked' );
 			requestedURL = self.urlunfaker();
 			Barba.Pjax.onStateChange();
 		};
