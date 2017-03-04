@@ -1,7 +1,7 @@
 {
   "name": "jquery-musketeer",
   "title": "jQuery Musketeer",
-  "version": "0.2.2",
+  "version": "0.3.2",
   "description": "Manage multiple contents from different languages bundled in the webpage",
   "repository": {
     "type": "git",
