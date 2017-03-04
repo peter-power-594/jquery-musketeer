@@ -9,6 +9,21 @@
 	}
 }( this, function( $  ) {
 
+	if ( ! $.parseJSON ) {
+    	$.parseJSON = function( str ) {
+        	var obj;
+        	try {
+            	obj = JSON.parse( str );
+            } catch ( e ) {
+            	if ( window.console && window.console.log ) {
+                	window.console.log( e );
+                }
+            	obj = null;
+            }
+        	return obj;			
+        };
+    }
+
 	function Musketeer( options ) {
 		this.init();
 	}
@@ -28,7 +43,7 @@
 		debug: "0",
 		i18n: {},
 		barbajs: {
-			head: [ 
+			head: [
 				"meta[name='keywords']",
 				"meta[name='description']",
 				"meta[property^='og']",
@@ -50,7 +65,7 @@
 		$( document ).ready( function() {
 			var $setting = $( '#musketeer-options' );
 			if ( $setting.length ) {
-				self.options = $.extend( true, self.constructor.defaults, JSON.parse( $setting.html() ) );
+				self.options = $.extend( true, self.constructor.defaults, $.parseJSON( $setting.html() ) );
 			}
 			else if ( self.options ) {
 				self.options = $.extend( true, self.constructor.defaults, self.options );
@@ -274,6 +289,9 @@
 			return false;
 		}
 		var refreshSocialButtons = function() {
+        	if ( ! window.Barba ) {
+            	return true;
+            }
 			var $sel = $( '.' + Barba.Pjax.Dom.containerClass ),
 				_selfTwttr = window.twttr || false,
 				_selfFbSdk = window.FB || false,
@@ -281,7 +299,7 @@
 			if ( _selfTwttr && _selfTwttr.widgets ) {
 				_selfTwttr.widgets.load( $sel[ $sel.length-1 ] );
 			}
-			if ( _selfFbSdk && _selfTwttr.XFBML ) {
+			if ( _selfFbSdk && _selfFbSdk.XFBML ) {
 				_selfFbSdk.XFBML.parse( $sel[ $sel.length-1 ] );
 			}
 			if ( _selfGpApi && _selfGpApi.plusone ) {
@@ -306,12 +324,14 @@
 			// Change url state too if need
 			var url = self.urlfaker();
 			if ( url !== document.location.href ) {
-				window.history.pushState( null, null, url );
+				if ( window.history && window.history.pushState ) {
+					window.history.pushState( null, null, url );
+				}
 			}
 			// Switch html head tags
 			var $metas = $( '#head-' + lang );
 			if ( $metas.length ) {
-				var metaCfg = JSON.parse( $metas.html() );
+				var metaCfg = $.parseJSON( $metas.html() );
 				var $head   = $( 'head' );
 				$( 'head' ).find( self.options.barbajs.head ).filter( ':not( script )' ).remove();
 				for ( var tagName in metaCfg ) {
@@ -355,9 +375,9 @@
 				var $el = $( this );
 				if ( $el.length ) {
 					if ( /script/.test( ( $el[ 0 ].tagName || '' ).toLowerCase() ) ) {
-						var json = JSON.parse( $el.html() );
+						var json = $.parseJSON( $el.html() );
 						if ( json && json.id && json.content ) {
-							$( '#' + json.id ).html( $( '<textarea/>' ).html( json.content ).text() ).data( 'cached', null );
+							$( '#' + json.id ).html( json.content ).data( 'cached', null );
 						}
 					}
 					else if ( ! $el.children().length && $el.data( 'cached' ) ) {
@@ -415,7 +435,7 @@
 			var $el = $( this ), 
 				id  = $el.attr( 'id' ) || false;
 			if ( id ) {
-				Barba.Utils.xhr( $el.attr( 'data-remote' ) ).then(function( data ) {
+				var complete = function( data ) {
 					async--;
 					$el.html( $( parseHTMLBody( data  ) ).find( '#' + id ).html() );
 					var $jsonHead = $( parseHTMLHead( data ) ).find( 'script[lang]' );
@@ -428,9 +448,20 @@
 							callback();
 						}
 					}
-				}, function ( error ) {
+				};
+				var failed = function( error ) {
 					self.log( error.message );
-				});
+				};
+				if ( ! window.Barba ) {
+					$.ajax({
+						url: $el.attr( 'data-remote' ),
+						success: complete,
+						error: failed
+					});
+				}
+				else {
+					Barba.Utils.xhr( $el.attr( 'data-remote' ) ).then( complete, failed );
+				}
 				$el.removeAttr( 'data-remote' );
 			}
 			else {
