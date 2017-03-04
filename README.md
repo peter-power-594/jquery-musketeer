@@ -83,7 +83,7 @@ Javascript Object
 		debug:			1,
 		i18n: {
 			base:		"ja",
-			langs":		[ "en", "ja" ],
+			langs:		[ "en", "ja" ],
 			selector:	".i18n-%lang",
 			menu:		"#i18n-switch"
 		}
