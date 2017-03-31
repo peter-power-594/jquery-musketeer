@@ -7,7 +7,7 @@
 	} else {
 		root.musketeer = factory( root.jQuery );
 	}
-}( this, function( $  ) {
+}( this, function( $ ) {
 
 	if ( ! $.parseJSON ) {
     	$.parseJSON = function( str ) {
@@ -35,7 +35,7 @@
 	}
 
 	function parseHTMLBody( data ) {
-		var htmlBody = data.replace( /(\r\n|\n|\r)/gm, '').replace( /([^]+<body[^>]*>|<\/body>[^]+)/g );
+		var htmlBody = data.match( /<body[^>]*>([\s\S.]*)<\/body>/i )[ 0 ];
 		return $( '<div />' ).html( $.parseHTML( htmlBody, document, true ) );
 	}
 
