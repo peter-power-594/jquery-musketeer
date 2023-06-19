@@ -1,4 +1,8 @@
-/* @license MIT LICENSE https://github.com/grenouille220/jquery-musketeer/blob/master/LICENSE */
+/**! jQuery Musketeer
+ * Single Page Multilingual Content Manager
+ * @author @peter-power-594
+ * @license MIT LICENSE https://github.com/peter-power-594/jquery-musketeer/blob/master/LICENSE
+ */
 (function( root, factory ) {
 	if ( typeof define === 'function' && define.amd ) {
 		define( [ 'jquery' ], factory );
@@ -86,7 +90,7 @@
 					}
 				};
 			}
-			self.lang = $.jStorage.get( 'lang', self.options.i18n.base );
+			self.lang = $.yaJsStorage.get( 'lang', self.options.i18n.base );
 			self.getRemoteData(function() {
 				self.i18n();
 			});
@@ -209,7 +213,7 @@
 		Barba.Pjax.cacheEnabled = false;
 		// Override Barba library native pushstate
 		// The pushState is initially called in Barba.Pjax.goTo
-		// So overriding Barba.Pjax.goTo first
+		// So overriding both Barba.Pjax.goTo AND Barba.Pjax.getCurrentURL
 		var requestedURL = '';
 		Barba.Pjax.getCurrentUrl = function() {
 			return requestedURL; // Return as it is
@@ -281,6 +285,7 @@
 		});
 	};
 
+
 	Musketeer.prototype.i18n = function() {
 		if ( ! this.options || ! this.options.i18n ) {
 			return false;
@@ -313,7 +318,7 @@
 			self.log( 'info', 'Switching Language to ' + lang );
 			$( document ).trigger( 'musketeer:ready' );
 	   		self.lang = lang; // Current lang
-	   		$.jStorage.set( 'lang', lang );
+	   		$.yaJsStorage.set( 'lang', lang );
 			// Switch global document language and update body classnames
 		   	var $body = $( 'body' );
 			if ( ! $body.hasClass( self.lang ) ) {
@@ -417,9 +422,10 @@
 			self.triggerLang( reqLang[ 1 ] );
 		}
 		else {
-			switchLanguage( $.jStorage.get( 'lang', docEl.lang ) );
+			switchLanguage( $.yaJsStorage.get( 'lang', docEl.lang ) );
 		}
 	};
+
 
 	Musketeer.prototype.getRemoteData = function( callback ) {
 		var self	 = this,

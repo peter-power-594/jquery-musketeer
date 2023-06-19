@@ -52,11 +52,11 @@ head of html (open graph meta tags,...)
 ### Requirements
 The current script relies heavily on the following plugins:
 * [jQuery >= 1.8](https://github.com/jquery/jquery)
-* [jQuery Storage](https://github.com/andris9/jStorage)
-* [Barba.js 1.0.0](https://github.com/luruke/barba.js)
+* [jQuery Storage Fork ^0.1.4 (Yet Another JS Storage)](https://github.com/udalmik/ya-js-storage)
+* [Barba.js ^1.0.0](https://github.com/luruke/barba.js)
 
-So you need to include them as well.  
-Internet Explorer 10 at least is required.
+<em>yaJs</em> & <em>Barba</em> are included in the bundle file,  
+you just need jQuery and Internet Explorer 10 at least.
 
 ### Basic Setup
 

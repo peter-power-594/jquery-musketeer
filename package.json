@@ -1,25 +1,11 @@
 {
-  "name": "jquery-musketeer",
-  "title": "jQuery Musketeer",
-  "version": "0.3.5",
-  "description": "Manage multiple contents from different languages bundled in the webpage",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/grenouille220/jquery-musketeer.git"
-  },
-  "dependencies": {
-	"jquery": ">=1.8",
-	"jstorage": "0.4.12",
-    "barba.js": "1.0.0"
-  },
-  "author": "D’Artagnan",
-  "contributors": [
-		"Grenouille 220 (http://grenouille220.github.io)"
-  ],
-  "licenses": [
-    {
-        "type": "MIT",
-        "url": "https://github.com/grenouille220/jquery-musketeer/blob/master/LICENSE"
-    },
-  ],
+  "devDependencies": {
+    "barba.js": "^1.0.0",
+    "grunt-cli": "^1.4.3",
+    "grunt-contrib-concat": "^2.1.0",
+    "grunt-contrib-jshint": "^3.2.0",
+    "grunt-contrib-uglify": "^5.2.2",
+    "grunt-contrib-watch": "^1.1.0",
+    "ya-js-storage": "^0.1.4"
+  }
 }
