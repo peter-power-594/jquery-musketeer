@@ -268,6 +268,18 @@
 			requestedURL = self.urlunfaker();
 			Barba.Pjax.onStateChange();
 		};
+		// Force check on media and other url
+		Barba.Pjax.originalPreventCheck = Barba.Pjax.preventCheck;
+		Barba.Pjax.preventCheck = function( ev, el ) {
+			if ( ! Barba.Pjax.originalPreventCheck( ev, el ) ) {
+				return false;
+			}
+			// No need to check for element.href - originalPreventCheck does this for us! (and more!)
+			if ( /\.(pdf|jpg|jpeg|gif|png|webp|tiff|bmp|mov|webm)/.test( el.href.toLowerCase() ) ) {
+				return false;
+			}
+			return true;
+		};
 		// Go on
 		Barba.Pjax.start();
 		Barba.Dispatcher.on( 'newPageReady', function( currentStatus, oldStatus, container, newPageRawHTML ) {
