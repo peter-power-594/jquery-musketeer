@@ -295,6 +295,9 @@
 				window.ga( 'send', 'pageview', window.location.pathname + window.location.search );
 			}
 		});
+		Barba.Dispatcher.on( 'transitionCompleted', function( currentStatus, prevStatus ) {
+			$( document ).trigger( 'musketeer:page_loaded' );
+		});			
 	};
 
 
@@ -329,14 +332,15 @@
 		var switchLanguage = function( lang ) {
 			self.log( 'info', 'Switching Language to ' + lang );
 			$( document ).trigger( 'musketeer:ready' );
-	   		self.lang = lang; // Current lang
+	   		self.lang = ( lang || '' ).replace( /_.*$/, '' ); // Current lang (Short version)
 	   		$.yaJsStorage.set( 'lang', lang );
 			// Switch global document language and update body classnames
-		   	var $body = $( 'body' );
-			if ( ! $body.hasClass( self.lang ) ) {
-				$body.removeClass( docEl.lang );
+		   	var $body = $( 'body' ),
+				$docEl = $( docEl );
+			if ( ! $docEl.hasClass( self.lang ) ) {
+				$docEl.removeClass( docEl.lang );
    				docEl.lang = self.lang;
-			   	$body.addClass( self.lang );
+			   	$docEl.addClass( self.lang );
 			}
 			// Change url state too if need
 			var url = self.urlfaker();
