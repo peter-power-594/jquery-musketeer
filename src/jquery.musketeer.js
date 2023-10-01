@@ -132,7 +132,7 @@
 		}
 		// Remove language dependencies from pathname
 		$.each( self.options.i18n.langs, function() {
-			pme = pme.replace( new RegExp( '^/' + this.toString() + '/' ), '/' );
+			pme = pme.replace( new RegExp( '^/' + this.toString().replace( /[_-]+.*$/, '' ) + '/' ), '/' );
 		});
 		// Remove language dependencies from parameters
 		if ( /lang/.test( sch || '' ) ) {
@@ -147,7 +147,7 @@
 		}
 		// If not base language, we need a fake url
 		if ( self.lang !== self.options.i18n.base ) {
-			hst += '/' + self.lang;
+			hst += '/' + self.lang.replace( /[_-]+.*$/, '' );
 		}
 		url = [
 			window.location.protocol,
@@ -172,7 +172,7 @@
 			hsh = window.location.hash,
 			url = '';
 		$.each( self.options.i18n.langs, function() {
-			var lng = this.toString(),
+			var lng = this.toString().replace( /[_-]+.*$/, '' ),
 				reg = new RegExp( '^/' + lng + '/' );
 			if ( reg.test( pme ) ) {
 				pme = pme.replace( reg, '/' );
@@ -275,7 +275,7 @@
 				return false;
 			}
 			// No need to check for element.href - originalPreventCheck does this for us! (and more!)
-			if ( /\.(pdf|jpg|jpeg|gif|png|webp|tiff|bmp|mov|webm)/.test( el.href.toLowerCase() ) ) {
+			if ( /\.(pdf|jpg|jpeg|gif|png|webp|tiff|bmp|mov|webm|mp3|mp4|ogg|acc)/.test( el.href.toLowerCase() ) ) {
 				return false;
 			}
 			return true;
@@ -317,10 +317,10 @@
 				_selfFbSdk = window.FB || false,
 				_selfGpApi = window.gapi || false;
 			if ( _selfTwttr && _selfTwttr.widgets ) {
-				_selfTwttr.widgets.load( $sel[ $sel.length-1 ] );
+				_selfTwttr.widgets.load( $sel[ $sel.length - 1 ] );
 			}
 			if ( _selfFbSdk && _selfFbSdk.XFBML ) {
-				_selfFbSdk.XFBML.parse( $sel[ $sel.length-1 ] );
+				_selfFbSdk.XFBML.parse( $sel[ $sel.length - 1 ] );
 			}
 			if ( _selfGpApi && _selfGpApi.plusone ) {
 				_selfGpApi.plusone.go();
@@ -332,15 +332,18 @@
 		var switchLanguage = function( lang ) {
 			self.log( 'info', 'Switching Language to ' + lang );
 			$( document ).trigger( 'musketeer:ready' );
-	   		self.lang = ( lang || '' ).replace( /_.*$/, '' ); // Current lang (Short version)
-	   		$.yaJsStorage.set( 'lang', lang );
+			// Target language (Short version)
+			var newLang = ( lang || '' ).replace( /[_-]+.*$/, '' ); // en-US => en
 			// Switch global document language and update body classnames
 		   	var $body = $( 'body' ),
 				$docEl = $( docEl );
-			if ( ! $docEl.hasClass( self.lang ) ) {
-				$docEl.removeClass( docEl.lang );
-   				docEl.lang = self.lang;
-			   	$docEl.addClass( self.lang );
+			if ( ! $docEl.hasClass( newLang ) ) {
+				$docEl.removeClass( ( self.lang || docEl.lang ).replace( /[_-]+.*$/, '' ) );
+   				docEl.lang = lang;
+			   	$docEl.addClass( newLang );
+				// Store current lang (Long version)
+				self.lang = lang; 
+				$.yaJsStorage.set( 'lang', lang );
 			}
 			// Change url state too if need
 			var url = self.urlfaker();
